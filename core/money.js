@@ -23,3 +23,10 @@ export function percentOfCents(cents, basisPoints) {
   assertCents(cents); assertCents(basisPoints, 'pourcentage');
   return Math.round((cents * basisPoints) / 10000);
 }
+
+/** Centimes → texte pour un champ de saisie ("12,50"), sans passer par les flottants. */
+export function centsToInput(cents) {
+  assertCents(cents);
+  const a = Math.abs(cents);
+  return `${cents < 0 ? '-' : ''}${Math.trunc(a / 100)},${String(a % 100).padStart(2, '0')}`;
+}
