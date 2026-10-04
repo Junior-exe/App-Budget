@@ -1,20 +1,34 @@
 import { openStore, requestPersistentStorage } from '../data/store.js';
 import { buildBackup, serializeBackup, prepareImport, applyImport, backupAgeDays } from '../data/backup.js';
+import { createRepository } from '../data/repository.js';
 import { demoState } from '../data/demo.js';
 import { emptyState } from '../core/types.js';
 import { periodKeyOf } from '../core/dates.js';
-import { buildDashboard, todayLocal } from './view-model.js';
+import { buildDashboard, buildAccountsScreen, buildCategoriesScreen, buildTransactionsScreen, todayLocal } from './view-model.js';
 import { renderDashboard, esc } from './render.js';
+import * as S from './screens.js';
 
 const app = document.getElementById('app'), fileInput = document.getElementById('file');
-let store, persisted = null, vm = null, monthKey = periodKeyOf(todayLocal());
+const VIEWS = ['home', 'transactions', 'accounts', 'categories'];
+const viewFromHash = () => (VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home');
+let store, repo, state, vm = null, persisted = null, view = viewFromHash(), monthKey = periodKeyOf(todayLocal());
+
+function toast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2200);
+}
 
 async function refresh() {
-  const state = await store.loadState();
-  vm = buildDashboard(state, monthKey);
-  const last = await store.lastBackupAt();
-  app.innerHTML = renderDashboard(vm, { empty: state.accounts.length === 0, isDemo: !!(await store.getMeta('isDemo')),
-    neverBackedUp: last === null, backupAge: backupAgeDays(last, new Date().toISOString()), persisted });
+  state = await store.loadState();
+  document.getElementById('nav').innerHTML = S.renderNav(view);
+  if (view === 'home') {
+    vm = buildDashboard(state, monthKey);
+    const last = await store.lastBackupAt();
+    app.innerHTML = renderDashboard(vm, { empty: state.accounts.length === 0, isDemo: !!(await store.getMeta('isDemo')),
+      neverBackedUp: last === null, backupAge: backupAgeDays(last, new Date().toISOString()), persisted });
+  } else if (view === 'transactions') { vm = buildTransactionsScreen(state, monthKey); app.innerHTML = S.renderTransactions(vm); }
+  else if (view === 'accounts') app.innerHTML = S.renderAccounts(buildAccountsScreen(state));
+  else app.innerHTML = S.renderCategories(buildCategoriesScreen(state));
 }
 
 function download(name, text) {
@@ -32,9 +46,61 @@ function ask(html, okLabel) {
   });
 }
 
+/** Feuille de saisie : valide via le repository ; avertissements → confirmation avant enregistrement. */
+function sheet(html, { onSubmit, onDelete, saved = 'Enregistré' }) {
+  const d = document.createElement('dialog'); d.className = 'sheet'; d.innerHTML = html;
+  const form = d.querySelector('form'), err = d.querySelector('.err');
+  const show = (msgs) => { err.textContent = msgs.join(' '); err.hidden = msgs.length === 0; };
+  d.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) d.close(); });
+  form.addEventListener('change', (e) => {
+    if (form.dataset.form === 'tx' && e.target.name === 'type') form.dataset.type = e.target.value;
+    if (form.dataset.form === 'account' && e.target.name === 'type') form.isSavings.checked = e.target.value === 'savings';
+  });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault(); show([]);
+    try {
+      let r = await onSubmit(new FormData(form), false);
+      if (!r.ok && r.needsConfirm && confirm(`${r.warnings.join('\n')}\n\nContinuer ?`)) r = await onSubmit(new FormData(form), true);
+      if (r.ok) { d.close(); toast(saved); await refresh(); } else if (!r.needsConfirm) show(r.errors);
+    } catch (x) { show([x.message]); }
+  });
+  d.querySelector('[data-del]')?.addEventListener('click', async () => {
+    if (!confirm('Supprimer cette opération ?')) return;
+    const r = await onDelete(); if (r.ok) { d.close(); toast('Supprimée'); await refresh(); } else show(r.errors);
+  });
+  d.addEventListener('close', () => d.remove());
+  document.body.append(d); d.showModal();
+}
+
+async function openTx(tx = null) {
+  const prefs = (await store.getMeta('ui')) ?? {};
+  sheet(S.transactionFormHtml(state, tx, { type: 'expense', date: todayLocal(), status: 'done', accountId: prefs.lastAccountId }), {
+    async onSubmit(fd, confirmed) {
+      const input = S.readTransactionForm(fd);
+      const r = await repo.saveTransaction(input, { confirmWarnings: confirmed });
+      if (r.ok && input.accountId) await store.setMeta('ui', { ...prefs, lastAccountId: input.accountId }); // compte mémorisé pour la saisie rapide
+      return r;
+    },
+    onDelete: tx && (() => repo.deleteTransaction(tx.id)),
+  });
+}
+
+const openAccount = (a = null) => sheet(S.accountFormHtml(a), { onSubmit: (fd, c) => repo.saveAccount(S.readAccountForm(fd), { confirmWarnings: c }) });
+const openCategory = (c = null, kind = 'expense') => sheet(S.categoryFormHtml(c, kind), { onSubmit: (fd, ok) => repo.saveCategory(S.readCategoryForm(fd), { confirmWarnings: ok }) });
+const go = (v) => { if (location.hash.slice(1) === v) return refresh(); location.hash = v; };
+
 const actions = {
+  view: (el) => go(el.dataset.view),
+  'go-accounts': () => go('accounts'),
   prev: async () => { monthKey = vm.prevKey; await refresh(); },
   next: async () => { monthKey = vm.nextKey; await refresh(); },
+  'new-tx': () => state.accounts.some((a) => a.active) ? openTx() : (go('accounts'), toast('Créez d’abord un compte')),
+  'edit-tx': (el) => openTx(state.transactions.find((t) => t.id === el.dataset.id)),
+  'new-account': () => openAccount(),
+  'edit-account': (el) => openAccount(state.accounts.find((a) => a.id === el.dataset.id)),
+  'new-cat': (el) => openCategory(null, el.dataset.kind),
+  'edit-cat': (el) => openCategory(state.categories.find((c) => c.id === el.dataset.id)),
+  async 'seed-cats'() { toast(`${await repo.seedDefaultCategories()} catégorie(s) ajoutée(s)`); await refresh(); },
   import: () => fileInput.click(),
   async export() {
     const now = new Date().toISOString();
@@ -51,7 +117,12 @@ const actions = {
   },
 };
 
-app.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) actions[b.dataset.act]?.().catch((err) => alert(err.message)); });
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (el) actions[el.dataset.act]?.(el)?.catch?.((err) => alert(err.message));
+});
+document.getElementById('fab').addEventListener('click', () => actions['new-tx']());
+window.addEventListener('hashchange', () => { view = viewFromHash(); refresh(); });
 
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files[0]; fileInput.value = ''; if (!file) return;
@@ -66,7 +137,7 @@ fileInput.addEventListener('change', async () => {
 });
 
 try {
-  store = await openStore();
+  store = await openStore(); repo = createRepository(store);
   persisted = (await requestPersistentStorage()).persisted;
   await refresh();
   navigator.serviceWorker?.register('./sw.js').catch(() => {});
