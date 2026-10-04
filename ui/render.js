@@ -8,8 +8,8 @@ const row = (label, k, c, cls = '') => `<div class="row ${cls}"><span>${label}</
 
 export function renderDashboard(vm, ui = {}) {
   if (ui.empty) return `<header class="top"><h1>Budget</h1></header>
-    <section class="card"><h2>Aucune donnée</h2><p class="note">Importez une sauvegarde, ou chargez des données de démonstration (fictives) pour tester l'écran.</p>
-    <div class="actions"><button class="primary" data-act="import">Importer une sauvegarde</button><button data-act="demo">Données de démonstration</button></div></section>`;
+    <section class="card"><h2>Aucune donnée</h2><p class="note">Créez vos comptes, importez une sauvegarde, ou chargez des données de démonstration (fictives) pour tester l'écran.</p>
+    <div class="actions"><button class="primary" data-act="go-accounts">Créer mes comptes</button><button data-act="import">Importer une sauvegarde</button><button data-act="demo">Données de démonstration</button></div></section>`;
   const { position: p, month: mo, savings: s, toCommit: c } = vm;
   const items = c.fixedItems.map((i) => `<div class="row sub"><span>${esc(i.description || 'Charge')} · ${esc(i.date.slice(8))}/${esc(i.date.slice(5, 7))}</span>${amt('toCommitItem:' + i.id, i.amountCents)}</div>`).join('');
   const backup = ui.neverBackedUp ? 'Aucune sauvegarde effectuée.' : `Dernière sauvegarde : il y a ${ui.backupAge} jour(s).`;
