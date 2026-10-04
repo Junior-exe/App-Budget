@@ -28,3 +28,30 @@ details summary { color:var(--mute); padding:6px 0; min-height:32px; }
 .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
 dialog { border:0; border-radius:14px; max-width:420px; width:calc(100% - 28px); background:var(--card); color:var(--ink); }
 dialog form { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+
+/* ---- Navigation, saisie rapide, listes, formulaires ---- */
+main { padding-bottom: 150px; }
+#nav { position:fixed; left:0; right:0; bottom:0; display:flex; background:var(--card); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); }
+#nav button { flex:1; border:0; border-radius:0; background:none; min-height:56px; color:var(--mute); font-size:.85rem; }
+#nav button.on { color:var(--free); font-weight:700; }
+#fab { position:fixed; right:16px; bottom:calc(72px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%; border:0; background:var(--free); color:#fff; font-size:2rem; line-height:1; box-shadow:0 4px 12px rgba(0,0,0,.25); padding:0; }
+#toast { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(140px + env(safe-area-inset-bottom)); background:var(--ink); color:var(--bg); padding:8px 16px; border-radius:20px; font-size:.9rem; z-index:10; }
+.item { display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0; border-top:1px solid var(--line); border-radius:0; background:none; padding:10px 0; min-height:52px; }
+.card > .item:first-of-type, .card > .tag + .item, .card > h2 + .item { border-top:0; }
+.grow { flex:1; min-width:0; } .item small { display:block; color:var(--mute); } .item .amt.pos, .pos { color:var(--free); }
+em.badge { font-style:normal; padding:0 8px; margin:0 0 0 4px; font-size:.75rem; background:var(--warn-bg); color:var(--warn); }
+button.danger { color:#b91c1c; margin-right:auto; }
+dialog.sheet { max-width:480px; width:100%; margin:auto auto 0; border-radius:16px 16px 0 0; max-height:92vh; overflow:auto; padding:16px; }
+dialog.sheet::backdrop { background:rgba(0,0,0,.45); }
+dialog.sheet h2 { margin:0 0 10px; font-size:1.1rem; }
+form label { display:block; margin:10px 0; font-size:.9rem; color:var(--mute); }
+form input:not([type=checkbox]):not([type=radio]), form select { display:block; width:100%; margin-top:4px; padding:10px; min-height:44px; font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:10px; }
+form label.check { display:flex; align-items:center; gap:8px; color:var(--ink); } form label.check input { width:22px; height:22px; }
+.seg { display:flex; gap:6px; margin:10px 0; } .seg label { flex:1; margin:0; position:relative; }
+.seg input { position:absolute; opacity:0; } .seg span { display:block; text-align:center; padding:10px 4px; border:1px solid var(--line); border-radius:10px; color:var(--ink); min-height:44px; }
+.seg input:checked + span { background:var(--free); color:#fff; border-color:var(--free); } .seg input:focus-visible + span { outline:2px solid var(--ink); }
+.err { background:var(--warn-bg); color:var(--warn); border-radius:10px; padding:8px 10px; font-size:.9rem; }
+form .actions { justify-content:flex-end; margin-top:14px; }
+form[data-type=expense] .xfer, form[data-type=income] .xfer, form[data-type=transfer] .flow,
+form[data-type=transfer] .only-expense, form[data-type=transfer] .only-income,
+form[data-type=expense] .only-income, form[data-type=income] .only-expense { display:none; }
