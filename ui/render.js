@@ -12,12 +12,12 @@ export function renderDashboard(vm, ui = {}) {
     <div class="actions"><button class="primary" data-act="go-accounts">Créer mes comptes</button><button data-act="import">Importer une sauvegarde</button><button data-act="demo">Données de démonstration</button></div></section>`;
   const { position: p, month: mo, savings: s, toCommit: c } = vm;
   const items = c.fixedItems.map((i) => `<div class="row sub"><span>${esc(i.description || 'Charge')} · ${esc(i.date.slice(8))}/${esc(i.date.slice(5, 7))}</span>${amt('toCommitItem:' + i.id, i.amountCents)}</div>`).join('');
-  const backup = ui.neverBackedUp ? 'Aucune sauvegarde effectuée.' : `Dernière sauvegarde : il y a ${ui.backupAge} jour(s).`;
   return `
   <header class="top"><button data-act="prev" aria-label="Mois précédent">‹</button><h1>${esc(vm.label)}</h1><button data-act="next" aria-label="Mois suivant">›</button></header>
   ${vm.closed ? '<p class="badge">Mois clôturé</p>' : ''}
   ${ui.isDemo ? '<div class="banner">Données de démonstration (fictives). <button data-act="clear-demo">Les effacer</button></div>' : ''}
 
+  <div class="grid">
   <section class="card real"><p class="tag">SOLDE RÉEL</p><h2>Mes comptes</h2>
     ${vm.accounts.map((a) => row(esc(a.name) + (a.isSavings ? ' <span class="muted">(épargne)</span>' : ''), 'balance:' + a.id, a.balanceCents)).join('')}
     ${row('<strong>Total</strong>', 'total', vm.totalCents)}
@@ -49,7 +49,14 @@ export function renderDashboard(vm, ui = {}) {
     ${row('<strong>Total</strong>', 'toCommit', c.totalCents)}
     ${items ? `<details><summary>Détail des charges</summary>${items}</details>` : ''}</section>
 
-  <section class="card"><h2>Mes données</h2>
+  ${renderBackupCard(ui)}
+  </div>`;
+}
+
+/** Carte de sauvegarde : affichée sur l'accueil et dans l'écran « Plus ». */
+export function renderBackupCard(ui = {}) {
+  const backup = ui.neverBackedUp ? 'Aucune sauvegarde effectuée.' : `Dernière sauvegarde : il y a ${ui.backupAge} jour(s).`;
+  return `<section class="card"><h2>Mes données</h2>
     <p class="note">${backup}${ui.persisted === false ? ' Stockage non garanti : sauvegardez régulièrement.' : ''}</p>
     <div class="actions"><button data-act="export">Exporter</button><button data-act="import">Importer</button></div></section>`;
 }
