@@ -149,15 +149,6 @@ try {
   app.innerHTML = `<section class="card"><h2>Stockage indisponible</h2><p class="note">${esc(err.message)}</p></section>`;
 }
 
-function ask(html, okLabel) {
-  return new Promise((resolve) => {
-    const d = document.createElement('dialog');
-    d.innerHTML = `${html}<form method="dialog"><button value="cancel">${okLabel ? 'Annuler' : 'Fermer'}</button>${okLabel ? `<button class="primary" value="ok">${okLabel}</button>` : ''}</form>`;
-    d.addEventListener('close', () => { resolve(d.returnValue === 'ok'); d.remove(); });
-    document.body.append(d); d.showModal();
-  });
-}
-
 /** Feuille de saisie : valide via le repository ; avertissements → confirmation avant enregistrement. */
 function sheet(html, { onSubmit, onDelete, saved = 'Enregistré' }) {
   const d = document.createElement('dialog'); d.className = 'sheet'; d.innerHTML = html;
