@@ -5,7 +5,7 @@
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui,sans-serif;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-main { max-width:480px; margin:0 auto; padding:12px 14px 40px; }
+main { width:100%; max-width:640px; margin:0 auto; padding:12px 14px 150px; }
 .top { display:flex; align-items:center; justify-content:space-between; margin:4px 0 12px; }
 .top h1 { font-size:1.25rem; margin:0; }
 button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:10px; padding:8px 14px; min-height:44px; }
@@ -26,11 +26,8 @@ button.primary { background:var(--free); color:#fff; border-color:var(--free); }
 .badge { display:inline-block; background:var(--real-bg); color:var(--real); border-radius:8px; padding:2px 10px; font-size:.8rem; margin:0 0 10px; }
 details summary { color:var(--mute); padding:6px 0; min-height:32px; }
 .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-dialog { border:0; border-radius:14px; max-width:420px; width:calc(100% - 28px); background:var(--card); color:var(--ink); }
-dialog form { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
 
 /* ---- Navigation, saisie rapide, listes, formulaires ---- */
-main { padding-bottom: 150px; }
 #nav { position:fixed; left:0; right:0; bottom:0; display:flex; background:var(--card); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); }
 #nav button { flex:1; border:0; border-radius:0; background:none; min-height:56px; color:var(--mute); font-size:.85rem; }
 #nav button.on { color:var(--free); font-weight:700; }
@@ -41,9 +38,6 @@ main { padding-bottom: 150px; }
 .grow { flex:1; min-width:0; } .item small { display:block; color:var(--mute); } .item .amt.pos, .pos { color:var(--free); }
 em.badge { font-style:normal; padding:0 8px; margin:0 0 0 4px; font-size:.75rem; background:var(--warn-bg); color:var(--warn); }
 button.danger { color:#b91c1c; margin-right:auto; }
-dialog.sheet { max-width:480px; width:100%; margin:auto auto 0; border-radius:16px 16px 0 0; max-height:92vh; overflow:auto; padding:16px; }
-dialog.sheet::backdrop { background:rgba(0,0,0,.45); }
-dialog.sheet h2 { margin:0 0 10px; font-size:1.1rem; }
 form label { display:block; margin:10px 0; font-size:.9rem; color:var(--mute); }
 form input:not([type=checkbox]):not([type=radio]), form select { display:block; width:100%; margin-top:4px; padding:10px; min-height:44px; font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:10px; }
 form label.check { display:flex; align-items:center; gap:8px; color:var(--ink); } form label.check input { width:22px; height:22px; }
@@ -51,7 +45,31 @@ form label.check { display:flex; align-items:center; gap:8px; color:var(--ink); 
 .seg input { position:absolute; opacity:0; } .seg span { display:block; text-align:center; padding:10px 4px; border:1px solid var(--line); border-radius:10px; color:var(--ink); min-height:44px; }
 .seg input:checked + span { background:var(--free); color:#fff; border-color:var(--free); } .seg input:focus-visible + span { outline:2px solid var(--ink); }
 .err { background:var(--warn-bg); color:var(--warn); border-radius:10px; padding:8px 10px; font-size:.9rem; }
-form .actions { justify-content:flex-end; margin-top:14px; }
 form[data-type=expense] .xfer, form[data-type=income] .xfer, form[data-type=transfer] .flow,
 form[data-type=transfer] .only-expense, form[data-type=transfer] .only-income,
 form[data-type=expense] .only-income, form[data-type=income] .only-expense { display:none; }
+
+/* ---- Fenêtres modales : toutes (saisie, confirmation, import) ---- */
+dialog { box-sizing:border-box; width:90%; max-width:500px; max-height:90vh; max-height:90dvh; margin:auto; padding:16px 16px 0;
+  overflow-x:hidden; overflow-y:auto; border:0; border-radius:16px; background:var(--card); color:var(--ink); }
+dialog::backdrop { background:rgba(0,0,0,.45); }
+dialog h2 { margin:0 0 10px; font-size:1.1rem; }
+dialog form[method=dialog] { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; padding:12px 0 16px; }
+form[data-form] { min-width:0; }
+form[data-form] > * { min-width:0; max-width:100%; }
+form input:not([type=checkbox]):not([type=radio]), form select { min-width:0; max-width:100%; text-overflow:ellipsis; }
+form .actions { position:sticky; bottom:0; display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; margin:0; padding:12px 0 16px; background:var(--card); }
+
+/* ---- Mise en page adaptative ---- */
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap:12px; align-items:start; }
+.grid > .card { margin:0; }
+.narrow { max-width:720px; margin:0 auto; }
+.top .back { width:auto; padding:0 12px; font-size:1rem; }
+@media (min-width:768px) {
+  main { max-width:1000px; padding:16px 24px 56px; }
+  #nav { position:sticky; top:0; z-index:5; max-width:1000px; margin:0 auto; padding:10px 24px 0; border:0; background:var(--bg); }
+  #nav button { flex:0 1 auto; min-height:44px; padding:0 20px; border-radius:22px; font-size:.95rem; }
+  #nav button.on { background:var(--free-bg); }
+  #fab { right:24px; bottom:24px; }
+  #toast { bottom:32px; }
+}
