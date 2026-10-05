@@ -149,12 +149,6 @@ try {
   app.innerHTML = `<section class="card"><h2>Stockage indisponible</h2><p class="note">${esc(err.message)}</p></section>`;
 }
 
-function download(name, text) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const a = Object.assign(document.createElement('a'), { href: url, download: name });
-  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 function ask(html, okLabel) {
   return new Promise((resolve) => {
     const d = document.createElement('dialog');
