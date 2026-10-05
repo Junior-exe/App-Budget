@@ -1,9 +1,9 @@
 // Écrans de gestion (HTML) et lecture des formulaires. Aucune formule financière : uniquement de l'affichage.
 import { formatCents, centsToInput } from '../core/money.js';
-import { esc } from './render.js';
+import { esc, renderBackupCard } from './render.js';
+import { tabs, tabOf } from './routes.js';
 
-const NAV = [['home', 'Accueil'], ['transactions', 'Opérations'], ['accounts', 'Comptes'], ['categories', 'Catégories']];
-export const renderNav = (view) => NAV.map(([v, l]) => `<button data-act="view" data-view="${v}"${v === view ? ' class="on" aria-current="page"' : ''}>${l}</button>`).join('');
+export const renderNav = (view) => tabs().map((t) => `<button data-act="view" data-view="${t.id}"${t.id === tabOf(view) ? ' class="on" aria-current="page"' : ''}>${t.label}</button>`).join('');
 
 const TYPES = { checking: 'Compte courant', savings: 'Épargne', cash: 'Espèces', other: 'Autre' };
 const header = (vm) => `<header class="top"><button data-act="prev" aria-label="Mois précédent">‹</button><h1>${esc(vm.label)}</h1><button data-act="next" aria-label="Mois suivant">›</button></header>`;
@@ -18,7 +18,7 @@ export function renderTransactions(vm) {
       <small>${dayOf(i.date)} · ${esc(i.subtitle)}${i.status === 'planned' ? ' <em class="badge">Prévu</em>' : ''}</small></span>
       <span class="amt ${cls}" data-k="tx:${esc(i.id)}" data-type="${i.type}" data-cents="${i.amountCents}">${amount}</span></button>`;
   }).join('');
-  return `${header(vm)}<section class="card">${rows || '<p class="note">Aucune opération ce mois-ci. Utilisez le bouton + pour en ajouter une.</p>'}</section>`;
+  return `${header(vm)}<div class="narrow"><section class="card">${rows || '<p class="note">Aucune opération ce mois-ci. Utilisez le bouton + pour en ajouter une.</p>'}</section></div>`;
 }
 
 // ---------- Comptes ----------
@@ -27,9 +27,9 @@ export function renderAccounts(vm) {
     <small>${TYPES[a.type]}${a.isSavings ? ' · épargne' : ''}${a.active ? '' : ' · désactivé'}</small></span>
     <span class="amt" data-k="balance:${esc(a.id)}" data-cents="${a.balanceCents}">${formatCents(a.balanceCents)}</span></button>`;
   return `<header class="top"><h1>Comptes</h1></header>
-    <section class="card real"><p class="tag">SOLDE RÉEL</p>${vm.active.map(row).join('') || '<p class="note">Aucun compte. Créez votre premier compte pour commencer.</p>'}
+    <div class="grid"><section class="card real"><p class="tag">SOLDE RÉEL</p>${vm.active.map(row).join('') || '<p class="note">Aucun compte. Créez votre premier compte pour commencer.</p>'}
     ${vm.active.length ? `<div class="row"><strong>Total</strong><span class="amt" data-k="total" data-cents="${vm.totalCents}">${formatCents(vm.totalCents)}</span></div>` : ''}</section>
-    ${vm.inactive.length ? `<section class="card"><h2>Comptes désactivés <small class="muted">(non comptés dans le total)</small></h2>${vm.inactive.map(row).join('')}</section>` : ''}
+    ${vm.inactive.length ? `<section class="card"><h2>Comptes désactivés <small class="muted">(non comptés dans le total)</small></h2>${vm.inactive.map(row).join('')}</section>` : ''}</div>
     <div class="actions"><button class="primary" data-act="new-account">Nouveau compte</button></div>`;
 }
 
@@ -53,10 +53,10 @@ export function renderCategories(vm) {
   const list = (g) => g.active.map((c) => `<button class="item" data-act="edit-cat" data-id="${esc(c.id)}"><span class="grow">${esc(c.name)}</span></button>`).join('')
     + g.inactive.map((c) => `<button class="item" data-act="edit-cat" data-id="${esc(c.id)}"><span class="grow muted">${esc(c.name)} · désactivée</span></button>`).join('');
   const none = !vm.expense.active.length && !vm.income.active.length;
-  return `<header class="top"><h1>Catégories</h1></header>
-    ${none ? '<section class="card"><p class="note">Aucune catégorie. Vous pouvez ajouter une sélection de catégories usuelles, puis les modifier.</p><div class="actions"><button class="primary" data-act="seed-cats">Ajouter les catégories usuelles</button></div></section>' : ''}
-    <section class="card"><h2>Dépenses</h2>${list(vm.expense)}<div class="actions"><button data-act="new-cat" data-kind="expense">Nouvelle catégorie de dépense</button></div></section>
-    <section class="card"><h2>Revenus</h2>${list(vm.income)}<div class="actions"><button data-act="new-cat" data-kind="income">Nouvelle catégorie de revenu</button></div></section>`;
+  return `<header class="top"><button class="back" data-act="view" data-view="more">‹ Plus</button><h1>Catégories</h1><span></span></header>
+    ${none ? '<section class="card narrow"><p class="note">Aucune catégorie. Vous pouvez ajouter une sélection de catégories usuelles, puis les modifier.</p><div class="actions"><button class="primary" data-act="seed-cats">Ajouter les catégories usuelles</button></div></section>' : ''}
+    <div class="grid"><section class="card"><h2>Dépenses</h2>${list(vm.expense)}<div class="actions"><button data-act="new-cat" data-kind="expense">Nouvelle catégorie de dépense</button></div></section>
+    <section class="card"><h2>Revenus</h2>${list(vm.income)}<div class="actions"><button data-act="new-cat" data-kind="income">Nouvelle catégorie de revenu</button></div></section></div>`;
 }
 
 export function categoryFormHtml(c, kind) {
@@ -104,4 +104,12 @@ export function readTransactionForm(fd) {
     description: fd.get('description'), status: fd.get('status') };
   return type === 'transfer' ? { ...base, fromAccountId: fd.get('fromAccountId'), toAccountId: fd.get('toAccountId') }
     : { ...base, accountId: fd.get('accountId'), categoryId: fd.get(type === 'expense' ? 'categoryExpense' : 'categoryIncome') || null };
+}
+
+// ---------- Plus (hub) ----------
+export function renderMore(vm, ui) {
+  return `<header class="top"><h1>Plus</h1></header><div class="grid">
+    <section class="card"><h2>Organisation</h2>
+      <button class="item" data-act="view" data-view="categories"><span class="grow"><strong>Catégories</strong><small>${vm.categories} active(s)</small></span><span class="muted">›</span></button></section>
+    ${renderBackupCard(ui)}</div>`;
 }
