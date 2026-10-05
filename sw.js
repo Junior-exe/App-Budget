@@ -1,7 +1,7 @@
 // Mode hors-ligne : le code est mis en cache. Changer CACHE à chaque nouvelle version de l'application.
-const CACHE = 'budget-v2';
+const CACHE = 'budget-v3';
 const FILES = ['./', 'index.html', 'styles.css', 'manifest.webmanifest',
-  'ui/app.js', 'ui/render.js', 'ui/screens.js', 'ui/view-model.js',
+  'ui/app.js', 'ui/render.js', 'ui/screens.js', 'ui/routes.js', 'ui/view-model.js',
   'core/types.js', 'core/money.js', 'core/dates.js', 'core/balances.js', 'core/month.js', 'core/recurrence.js', 'core/entities.js',
   'data/store.js', 'data/backup.js', 'data/validate.js', 'data/demo.js', 'data/repository.js',
   'icons/icon-192.png', 'icons/icon-512.png'];
